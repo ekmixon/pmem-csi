@@ -45,8 +45,8 @@ sphinx_md_useGitHubURL = True
 baseBranch = "devel"
 commitSHA = getenv('GITHUB_SHA')
 githubBaseURL = 'https://github.com/' + (getenv('GITHUB_REPOSITORY') or 'intel/pmem-csi') + '/'
-githubFileURL = githubBaseURL + "blob/"
-githubDirURL = githubBaseURL + "tree/"
+githubFileURL = f"{githubBaseURL}blob/"
+githubDirURL = f"{githubBaseURL}tree/"
 if commitSHA:
     githubFileURL = githubFileURL + commitSHA + "/"
     githubDirURL = githubDirURL + commitSHA + "/"

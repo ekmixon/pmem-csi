@@ -141,61 +141,67 @@ class CheckExternalLinksBuilder(DummyBuilder):
     @property
     def anchors_ignore(self) -> List[Pattern]:
         warnings.warn(
-            "%s.%s is deprecated." % (self.__class__.__name__, "anchors_ignore"),
+            f"{self.__class__.__name__}.anchors_ignore is deprecated.",
             RemovedInSphinx50Warning,
             stacklevel=2,
         )
+
         return [re.compile(x) for x in self.config.linkcheck_anchors_ignore]
 
     @property
     def auth(self) -> List[Tuple[Pattern, Any]]:
         warnings.warn(
-            "%s.%s is deprecated." % (self.__class__.__name__, "auth"),
+            f"{self.__class__.__name__}.auth is deprecated.",
             RemovedInSphinx50Warning,
             stacklevel=2,
         )
+
         return [(re.compile(pattern), auth_info) for pattern, auth_info
                 in self.config.linkcheck_auth]
 
     @property
     def to_ignore(self) -> List[Pattern]:
         warnings.warn(
-            "%s.%s is deprecated." % (self.__class__.__name__, "to_ignore"),
+            f"{self.__class__.__name__}.to_ignore is deprecated.",
             RemovedInSphinx50Warning,
             stacklevel=2,
         )
+
         return [re.compile(x) for x in self.config.linkcheck_ignore]
 
     @property
     def good(self) -> Set[str]:
         warnings.warn(
-            "%s.%s is deprecated." % (self.__class__.__name__, "good"),
+            f"{self.__class__.__name__}.good is deprecated.",
             RemovedInSphinx50Warning,
             stacklevel=2,
         )
+
         return self._good
 
     @property
     def broken(self) -> Dict[str, str]:
         warnings.warn(
-            "%s.%s is deprecated." % (self.__class__.__name__, "broken"),
+            f"{self.__class__.__name__}.broken is deprecated.",
             RemovedInSphinx50Warning,
             stacklevel=2,
         )
+
         return self._broken
 
     @property
     def redirected(self) -> Dict[str, Tuple[str, int]]:
         warnings.warn(
-            "%s.%s is deprecated." % (self.__class__.__name__, "redirected"),
+            f"{self.__class__.__name__}.redirected is deprecated.",
             RemovedInSphinx50Warning,
             stacklevel=2,
         )
+
         return self._redirected
 
     def check_thread(self) -> None:
         warnings.warn(
-            "%s.%s is deprecated." % (self.__class__.__name__, "check_thread"),
+            f"{self.__class__.__name__}.check_thread is deprecated.",
             RemovedInSphinx50Warning,
             stacklevel=2,
         )
@@ -203,36 +209,40 @@ class CheckExternalLinksBuilder(DummyBuilder):
 
     def limit_rate(self, response: Response) -> Optional[float]:
         warnings.warn(
-            "%s.%s is deprecated." % (self.__class__.__name__, "limit_rate"),
+            f"{self.__class__.__name__}.limit_rate is deprecated.",
             RemovedInSphinx50Warning,
             stacklevel=2,
         )
+
         worker = HyperlinkAvailabilityCheckWorker(self.env, self.config,
                                                   None, None, {})
         return worker.limit_rate(response)
 
     def rqueue(self, response: Response) -> Queue:
         warnings.warn(
-            "%s.%s is deprecated." % (self.__class__.__name__, "rqueue"),
+            f"{self.__class__.__name__}.rqueue is deprecated.",
             RemovedInSphinx50Warning,
             stacklevel=2,
         )
+
         return self._rqueue
 
     def workers(self, response: Response) -> List[Thread]:
         warnings.warn(
-            "%s.%s is deprecated." % (self.__class__.__name__, "workers"),
+            f"{self.__class__.__name__}.workers is deprecated.",
             RemovedInSphinx50Warning,
             stacklevel=2,
         )
+
         return []
 
     def wqueue(self, response: Response) -> Queue:
         warnings.warn(
-            "%s.%s is deprecated." % (self.__class__.__name__, "wqueue"),
+            f"{self.__class__.__name__}.wqueue is deprecated.",
             RemovedInSphinx50Warning,
             stacklevel=2,
         )
+
         return self._wqueue
 
     def process_result(self, result: Tuple[str, str, int, str, str, int]) -> None:
@@ -268,8 +278,8 @@ class CheckExternalLinksBuilder(DummyBuilder):
                 logger.warning(__('broken link: %s (%s)'), uri, info,
                                location=(filename, lineno))
             else:
-                logger.info(red('broken    ') + uri + red(' - ' + info))
-            self.write_entry('broken', docname, filename, lineno, uri + ': ' + info)
+                logger.info(red('broken    ') + uri + red(f' - {info}'))
+            self.write_entry('broken', docname, filename, lineno, f'{uri}: {info}')
             self.write_linkstat(linkstat)
         elif status == 'redirected':
             try:
@@ -283,12 +293,14 @@ class CheckExternalLinksBuilder(DummyBuilder):
             except KeyError:
                 text, color = ('with unknown code', purple)
             linkstat['text'] = text
-            logger.info(color('redirect  ') + uri + color(' - ' + text + ' to ' + info))
-            self.write_entry('redirected ' + text, docname, filename,
-                             lineno, uri + ' to ' + info)
+            logger.info(color('redirect  ') + uri + color(f' - {text} to {info}'))
+            self.write_entry(
+                f'redirected {text}', docname, filename, lineno, f'{uri} to {info}'
+            )
+
             self.write_linkstat(linkstat)
         else:
-            raise ValueError("Unknown status %s." % status)
+            raise ValueError(f"Unknown status {status}.")
 
     def write_entry(self, what: str, docname: str, filename: str, line: int,
                     uri: str) -> None:
@@ -333,7 +345,7 @@ class HyperlinkAvailabilityChecker:
             self.wqueue = PriorityQueue()
 
     def invoke_threads(self) -> None:
-        for i in range(self.config.linkcheck_workers):
+        for _ in range(self.config.linkcheck_workers):
             thread = HyperlinkAvailabilityCheckWorker(self.env, self.config,
                                                       self.rqueue, self.wqueue,
                                                       self.rate_limits, self.builder)
@@ -408,10 +420,13 @@ class HyperlinkAvailabilityCheckWorker(Thread):
 
         def get_request_headers() -> Dict:
             url = urlparse(uri)
-            candidates = ["%s://%s" % (url.scheme, url.netloc),
-                          "%s://%s/" % (url.scheme, url.netloc),
-                          uri,
-                          "*"]
+            candidates = [
+                f"{url.scheme}://{url.netloc}",
+                f"{url.scheme}://{url.netloc}/",
+                uri,
+                "*",
+            ]
+
 
             for u in candidates:
                 if u in self.config.linkcheck_request_headers:
@@ -463,7 +478,7 @@ class HyperlinkAvailabilityCheckWorker(Thread):
                     #
                     # Might have to be fixed in AnchorCheckParser instead?
                     if req_url.startswith('https://github.com/'):
-                        anchor_str = "user-content-" + anchor_str
+                        anchor_str = f"user-content-{anchor_str}"
                     found = check_anchor(response, anchor_str)
 
                     if not found:
@@ -510,16 +525,15 @@ class HyperlinkAvailabilityCheckWorker(Thread):
                     pass
             if response.url.rstrip('/') == req_url.rstrip('/'):
                 return 'working', '', 0
+            new_url = response.url
+            if anchor:
+                new_url += f'#{anchor}'
+            # history contains any redirects, get last
+            if response.history:
+                code = response.history[-1].status_code
+                return 'redirected', new_url, code
             else:
-                new_url = response.url
-                if anchor:
-                    new_url += '#' + anchor
-                # history contains any redirects, get last
-                if response.history:
-                    code = response.history[-1].status_code
-                    return 'redirected', new_url, code
-                else:
-                    return 'redirected', new_url, 0
+                return 'redirected', new_url, 0
 
         def check(docname: str) -> Tuple[str, str, int]:
             # check for various conditions without bothering the network
@@ -529,46 +543,45 @@ class HyperlinkAvailabilityCheckWorker(Thread):
                 if uri_re.match(uri):
                     # non supported URI schemes (ex. ftp)
                     return 'unchecked', '', 0
-                else:
-                    srcdir = path.dirname(self.env.doc2path(docname))
-                    parts = file_re.match(uri)
-                    if not parts and uri.startswith('#'):
-                        parts = (uri, '', uri[1:])
-                    if parts:
+                srcdir = path.dirname(self.env.doc2path(docname))
+                parts = file_re.match(uri)
+                if not parts and uri.startswith('#'):
+                    parts = (uri, '', uri[1:])
+                if parts:
                         # A document link. Check that the document exists by reading the generated
                         # HTML. This only works if the documented was already written out, which is
                         # not the case during the initial pass. The Makefile has to first generate
                         # without link checking, then a second time with link checking enabled.
-                        if parts[1]:
-                            filename = path.join(path.dirname(docname), parts[1])
-                        else:
-                            filename = docname + ".md"
-                        htmlfile = "_output/html/"+filename.replace(".md", ".html").replace(".rst", ".html")
-                        if path.exists(htmlfile):
-                            # Optionally check anchor.
-                            if parts[2]:
-                                anchor = parts[2]
-                                with open(htmlfile, encoding='utf-8') as f:
-                                    content = f.read()
-                                if not check_anchor_body(content, anchor):
-                                    self._broken[uri] = ''
-                                    return 'broken', "Anchor '%s' not found in %s" % (anchor, htmlfile), 0
-                            return 'working', '', 0
-                        else:
-                            self._broken[uri] = ''
-                            return 'broken', 'file %s not found' % htmlfile, 0
-                    elif uri.startswith("/"):
-                        # Absolute path is treated as relative to the current build directory.
-                        if path.exists("." + uri):
-                            return 'working', '', 0
-                        else:
-                            self._broken[uri] = ''
-                            return 'broken', 'file not found in build directory', 0
-                    elif path.exists(path.join(srcdir, uri)):
+                    filename = (
+                        path.join(path.dirname(docname), parts[1])
+                        if parts[1]
+                        else f"{docname}.md"
+                    )
+
+                    htmlfile = "_output/html/"+filename.replace(".md", ".html").replace(".rst", ".html")
+                    if path.exists(htmlfile):
+                        # Optionally check anchor.
+                        if parts[2]:
+                            anchor = parts[2]
+                            with open(htmlfile, encoding='utf-8') as f:
+                                content = f.read()
+                            if not check_anchor_body(content, anchor):
+                                self._broken[uri] = ''
+                                return 'broken', "Anchor '%s' not found in %s" % (anchor, htmlfile), 0
                         return 'working', '', 0
                     else:
                         self._broken[uri] = ''
-                        return 'broken', 'file not found relative to ' + srcdir, 0
+                        return 'broken', f'file {htmlfile} not found', 0
+                elif uri.startswith("/"):
+                    if path.exists(f".{uri}"):
+                        return 'working', '', 0
+                    self._broken[uri] = ''
+                    return 'broken', 'file not found in build directory', 0
+                elif path.exists(path.join(srcdir, uri)):
+                    return 'working', '', 0
+                else:
+                    self._broken[uri] = ''
+                    return 'broken', f'file not found relative to {srcdir}', 0
             elif uri in self._good:
                 return 'working', 'old', 0
             elif uri in self._broken:
@@ -630,8 +643,7 @@ class HyperlinkAvailabilityCheckWorker(Thread):
 
     def limit_rate(self, response: Response) -> Optional[float]:
         next_check = None
-        retry_after = response.headers.get("Retry-After")
-        if retry_after:
+        if retry_after := response.headers.get("Retry-After"):
             try:
                 # Integer: time to wait before next attempt.
                 delay = float(retry_after)
